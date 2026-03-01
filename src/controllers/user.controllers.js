@@ -1,8 +1,33 @@
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
-import { uploadOnCloundinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloundinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ApiError(400, "Unauthorized Access. User not found");
+    }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating access and refresh tokens"
+    );
+  }
+};
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullname, email, username, password } = req.body;
@@ -60,29 +85,77 @@ const registerUser = asyncHandler(async (req, res) => {
       password,
       username: username.toLowerCase(),
     });
-  
+
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken"
     );
-  
+
     if (!createdUser) {
       throw new ApiError(500, "Something happend while registering a user");
     }
-  
+
     return res
       .status(201)
       .json(new ApiResponse(201, createdUser, "User registered successfully"));
   } catch (error) {
     console.log("User creation failed");
-    
+
     if (avatar) {
-      await deleteFromCloudinary(avatar.public_id)
+      await deleteFromCloudinary(avatar.public_id);
     }
     if (coverImage) {
-      await deleteFromCloudinary(coverImage.public_id)
+      await deleteFromCloudinary(coverImage.public_id);
     }
-    throw new ApiError(500, "Something happend while registering a user and images were deleted");
+    throw new ApiError(
+      500,
+      "Something happend while registering a user and images were deleted"
+    );
   }
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  // get data from body
+  const { email, username, password } = req.body;
+
+  //validation
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  // validate password
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) throw new ApiError(401, "Invalid credentials");
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+  if (!loggedInUser) throw new ApiError(401, "Unauthorized access");
+
+  const options = {
+    httpOnly: true, // non-modifiable by the client side
+    secure: process.env.NODE_ENV === "production",
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken, refreshToken },
+        "User logged in successfully"
+      )
+    );
+});
+
+export { registerUser, loginUser };
