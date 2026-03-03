@@ -7,6 +7,7 @@ import {
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -172,7 +173,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-    const user = await User.findById(decoded?._id);
+    const user = await User.findById(decodedToken?._id);
 
     if (!user) throw new ApiError(404, "Invalid refresh token");
 
@@ -348,7 +349,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         // check user is subscribed to his own channel or not, only when the user is logged in
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user?._id, "subscribers.subscriber"] },
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
             then: true,
             else: false,
           },
@@ -380,7 +381,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: mongoose.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
@@ -435,5 +436,5 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
 };
