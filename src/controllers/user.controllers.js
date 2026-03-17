@@ -2,7 +2,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
 import {
-  uploadOnCloundinary,
+  uploadOnCloudinary,
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -62,7 +62,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   let avatar;
   try {
-    avatar = await uploadOnCloundinary(avatarLocalPath);
+    avatar = await uploadOnCloudinary(avatarLocalPath);
     console.log("Uploaded avatar", avatar);
   } catch (error) {
     console.log("Error uploading avatar", error);
@@ -71,7 +71,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   let coverImage;
   try {
-    coverImage = await uploadOnCloundinary(coverLocalPath);
+    coverImage = await uploadOnCloudinary(coverLocalPath);
     console.log("Uploaded cover image", coverImage);
   } catch (error) {
     console.log("Error uploading cover image", error);
