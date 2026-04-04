@@ -21,14 +21,8 @@ const router = Router();
 
 router.route("/register").post(
   upload.fields([
-    {
-      name: "avatar",
-      maxCount: 1,
-    },
-    {
-      name: "coverImage",
-      maxCount: 1,
-    },
+    { name: "avatar", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
   ]),
   registerUser
 );
@@ -48,7 +42,6 @@ router
 router
   .route("/cover-image")
   .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
-router.route("/history").get(verifyJWT, getWatchHistory)
-
+router.route("/history").get(verifyJWT, getWatchHistory);
 
 export default router;
