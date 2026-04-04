@@ -16,11 +16,16 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!localFilePath) return null;
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
+      folder: "videoTube",
     }); // automatically detect which file is coming
     console.log("File uploaded on cloudinary. File src: " + response.url);
 
-    // once the file is uploaded, we would like to delete it from our server
-    fs.unlinkSync(localFilePath);
+    // Clean up temp file immediately after successful upload
+    await fs
+      .unlink(localFilePath)
+      .catch((err) =>
+        console.error(`Failed to delete temp file: ${err.message}`)
+      );
     return response;
   } catch (error) {
     fs.unlinkSync(localFilePath);

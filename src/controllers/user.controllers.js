@@ -273,12 +273,20 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   if (!avatarLocalPath) throw new ApiError(400, "File is required");
 
-  const avatar = await uploadOnCloundinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
 
   if (!avatar.url)
     throw new ApiError(500, "Something went wrong while uploading avatar");
 
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(req.user?._id);
+
+  // Delete old thumbnail from Cloudinary (extract public ID from URL)
+  if (user.avatar) {
+    const oldPublicId = user.avatar.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(oldPublicId).catch(() => {});
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     { $set: { avatar: avatar.url } },
     { new: true }
@@ -286,7 +294,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Avatar updated successfully"));
+    .json(new ApiResponse(200, updatedUser, "Avatar updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
@@ -294,12 +302,20 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   if (!coverImageLocalPath) throw new ApiError(400, "File is required");
 
-  const coverImage = await uploadOnCloundinary(coverImageLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
   if (!coverImage.url)
     throw new ApiError(500, "Something went wrong while uploading cover image");
 
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(req.user?._id);
+
+  // Delete old thumbnail from Cloudinary (extract public ID from URL)
+  if (user.coverImage) {
+    const oldPublicId = user.coverImage.split("/").pop().split(".")[0];
+    await deleteFromCloudinary(oldPublicId).catch(() => {});
+  }
+
+  const UpdatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     { $set: { coverImage: coverImage.url } },
     { new: true }
@@ -307,7 +323,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+    .json(
+      new ApiResponse(200, UpdatedUser, "Cover image updated successfully")
+    );
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
