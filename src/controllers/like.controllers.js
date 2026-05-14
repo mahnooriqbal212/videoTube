@@ -82,6 +82,12 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
+  /*
+    Get all videos that the current user has liked, but only if:
+      * The video still exists
+      * The video is published (not deleted/unlisted)
+      * Include video details and owner information  
+  */
   const likedVideos = await Like.aggregate([
     {
       $match: {
@@ -127,7 +133,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
       },
     },
     {
-      // Drops likes where the video was deleted or unpublished
+      // Drops likes where the video was deleted or unpublished - an empty video array
       $unwind: "$video",
     },
     {
