@@ -9,29 +9,38 @@ import {
   deleteVideo,
   togglePublishStatus,
 } from "../controllers/video.controllers.js";
+import {
+  publishVideoValidator,
+  updateVideoValidator,
+  getAllVideosValidator,
+} from "../validators/video.validators.js";
 
 const router = Router();
 
-// unsecured routes
-router.route("/").get(getAllVideos);
-router.route("/:videoId").get(getVideoById);
+router.use(verifyJWT); // all video routes require auth
 
-// secured routes
-router.use(verifyJWT);
+router
+  .route("/")
+  .get(getAllVideosValidator, getAllVideos)
+  .post(
+    upload.fields([
+      { name: "videoFile", maxCount: 1 },
+      { name: "thumbnail", maxCount: 1 },
+    ]),
+    publishVideoValidator,
+    publishAVideo
+  );
 
-router.route("/publish").post(
-  upload.fields([
-    { name: "videoFile", maxCount: 1 },
-    { name: "thumbnail", maxCount: 1 },
-  ]),
-  publishAVideo
-);
+router
+  .route("/:videoId")
+  .get(getVideoById)
+  .patch(
+    upload.fields([{ name: "thumbnail", maxCount: 1 }]),
+    updateVideoValidator,
+    updateVideo
+  )
+  .delete(deleteVideo);
 
-router.route("/:videoId").put(
-  upload.single("thumbnail"), // Only thumbnail file optional
-  updateVideo
-);
-router.route("/:videoId").delete(deleteVideo);
 router.route("/:videoId/toggle-publish").patch(togglePublishStatus);
 
 export default router;
