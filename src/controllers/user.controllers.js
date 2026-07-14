@@ -56,25 +56,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is missing");
   }
 
-  //   const avatar = await uploadOnCloundinary(avatarLocalPath);
-  //   let coverImage = "";
-  //   if (coverLocalPath) coverImage = await uploadOnCloundinary(coverLocalPath);
-
   let avatar;
   try {
     avatar = await uploadOnCloudinary(avatarLocalPath);
-    console.log("Uploaded avatar", avatar);
   } catch (error) {
-    console.log("Error uploading avatar", error);
     throw new ApiError(500, "Failed to upload avatar");
   }
 
   let coverImage;
   try {
     coverImage = await uploadOnCloudinary(coverLocalPath);
-    console.log("Uploaded cover image", coverImage);
   } catch (error) {
-    console.log("Error uploading cover image", error);
     throw new ApiError(500, "Failed to upload cover image");
   }
 
