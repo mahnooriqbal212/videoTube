@@ -18,18 +18,20 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",
       folder: "videoTube",
     }); // automatically detect which file is coming
-    console.log("File uploaded on cloudinary. File src: " + response.url);
 
     // Clean up temp file immediately after successful upload
-    await fs
+    fs.promises
       .unlink(localFilePath)
       .catch((err) =>
         console.error(`Failed to delete temp file: ${err.message}`)
       );
+
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath);
-    return null;
+    console.error("Cloudinary upload failed:", error.message);
+    // Clean up temp file on failure
+    fs.promises.unlink(localFilePath).catch(() => {});
+    throw error;
   }
 };
 
