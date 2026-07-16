@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js";
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
+  getCloudinaryPublicId,
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
@@ -265,17 +266,16 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   if (!avatarLocalPath) throw new ApiError(400, "File is required");
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const user = await User.findById(req.user?._id);
 
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar.url)
     throw new ApiError(500, "Something went wrong while uploading avatar");
 
-  const user = await User.findById(req.user?._id);
-
-  // Delete old thumbnail from Cloudinary (extract public ID from URL)
+  // Delete old avatar from Cloudinary before updating DB
   if (user.avatar) {
-    const oldPublicId = user.avatar.split("/").pop().split(".")[0];
-    await deleteFromCloudinary(oldPublicId).catch(() => {});
+    const oldPublicId = getCloudinaryPublicId(user.avatar);
+    await deleteFromCloudinary(oldPublicId);
   }
 
   const updatedUser = await User.findByIdAndUpdate(
@@ -294,17 +294,16 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   if (!coverImageLocalPath) throw new ApiError(400, "File is required");
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const user = await User.findById(req.user?._id);
 
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!coverImage.url)
     throw new ApiError(500, "Something went wrong while uploading cover image");
 
-  const user = await User.findById(req.user?._id);
-
-  // Delete old thumbnail from Cloudinary (extract public ID from URL)
+  // Delete old cover image from Cloudinary before updating DB
   if (user.coverImage) {
-    const oldPublicId = user.coverImage.split("/").pop().split(".")[0];
-    await deleteFromCloudinary(oldPublicId).catch(() => {});
+    const oldPublicId = getCloudinaryPublicId(user.coverImage);
+    await deleteFromCloudinary(oldPublicId);
   }
 
   const UpdatedUser = await User.findByIdAndUpdate(
