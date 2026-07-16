@@ -38,11 +38,34 @@ const uploadOnCloudinary = async (localFilePath) => {
 const deleteFromCloudinary = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);
+
+    // Cloudinary returns { result: 'ok' } on success
+    // and { result: 'not found' } when publicId is wrong — not an error!
+    if (result.result !== "ok") {
+      console.error(
+        `Failed to delete from Cloudinary. PublicId: ${publicId}, Result:`,
+        result
+      );
+      return false;
+    }
     console.log("Deleted from cloudinary. Public id", publicId);
   } catch (error) {
-    console.log("Error deleting from cloudinary", error);
+    console.error("Error deleting from cloudinary", error);
     return null;
   }
 };
 
-export { uploadOnCloudinary, deleteFromCloudinary };
+const getCloudinaryPublicId = (url) => {
+  // URL: https://res.cloudinary.com/cloud/image/upload/v123/videoTube/filename.jpg
+  // We need everything after /upload/v{version}/ without the extension
+
+  const splitUrl = url.split("/");
+  const uploadIndex = splitUrl.indexOf("upload");
+  const publicIdWithExtension = splitUrl
+    .slice(uploadIndex + 2) 
+    .join("/");
+
+  return publicIdWithExtension.split(".")[0]; // returns "videoTube/filename" ✅
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary, getCloudinaryPublicId };
